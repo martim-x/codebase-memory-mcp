@@ -73,6 +73,12 @@ export const messages = {
       thisProcess: "THIS",
       uptime: "Uptime",
     },
+    theme: {
+      label: "Colour theme",
+      light: "Light theme",
+      dark: "Dark theme",
+      system: "Follow system",
+    },
   },
   zh: {
     tabs: {
@@ -143,6 +149,12 @@ export const messages = {
       noLogs: "暂无日志",
       thisProcess: "本进程",
       uptime: "运行时间",
+    },
+    theme: {
+      label: "配色主题",
+      light: "浅色主题",
+      dark: "深色主题",
+      system: "跟随系统",
     },
   },
 } as const;

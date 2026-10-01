@@ -4,6 +4,7 @@ import { StatsTab } from "./components/StatsTab";
 import { ControlTab } from "./components/ControlTab";
 import type { TabId } from "./lib/types";
 import { useUiMessages } from "./lib/i18n";
+import { ThemeToggle } from "./components/ThemeToggle";
 
 const TAB_IDS: TabId[] = ["graph", "stats", "control"];
 
@@ -82,16 +83,16 @@ export function App() {
   return (
     <div className="h-screen flex flex-col bg-background text-foreground">
       {/* Header */}
-      <header className="flex items-center justify-between px-5 h-12 border-b border-border bg-[#0b1920]/80 backdrop-blur-md shrink-0">
+      <header className="flex items-center justify-between gap-4 px-5 h-16 border-b border-border bg-popover/80 backdrop-blur-md shrink-0">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2.5">
-            <div className="w-[7px] h-[7px] rounded-full bg-primary" />
-            <span className="text-[13px] font-semibold text-foreground/90 tracking-tight">
+            <div className="w-2 h-2 rounded-full bg-primary" />
+            <span className="text-body font-semibold text-foreground tracking-tight">
               Codebase Memory
             </span>
             {version && (
               <span
-                className="translate-y-px text-[10px] font-mono text-foreground/30"
+                className="text-label font-mono text-muted-foreground"
                 title="Server version"
               >
                 {version.startsWith("v") ? version : `v${version}`}
@@ -100,7 +101,7 @@ export function App() {
           </div>
 
           {/* Tabs inline in header */}
-          <nav className="flex items-center gap-0.5">
+          <nav className="flex items-center gap-1">
             {tabs.map((tab) => {
               const disabled = tab.id === "graph" && !selectedProject;
               return (
@@ -109,12 +110,12 @@ export function App() {
                   onClick={() => navigate(tab.id, tab.id === "stats" ? null : selectedProject)}
                   disabled={disabled}
                   title={disabled ? "Select a project first" : undefined}
-                  className={`px-3 py-1 rounded-md text-[12px] font-medium transition-all ${
+                  className={`h-11 px-4 rounded-md text-body font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
                     disabled
-                      ? "text-muted-foreground/30 cursor-not-allowed"
+                      ? "text-muted-foreground cursor-not-allowed"
                       : activeTab === tab.id
-                        ? "bg-primary/15 text-primary"
-                        : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04]"
+                        ? "bg-accent text-accent-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
                   }`}
                 >
                   {tab.label}
@@ -124,22 +125,24 @@ export function App() {
           </nav>
         </div>
 
-        {selectedProject && (
-          <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-white/[0.04] border border-border/30">
-            <span className="text-[10px] text-foreground/30 uppercase tracking-wider">
-              {t.graph.selectedLabel}
-            </span>
-            <span className="text-[11px] text-primary font-mono truncate max-w-[300px]">
-              {selectedProject}
-            </span>
-            <button
-              onClick={() => navigate("stats", null)}
-              className="text-foreground/20 hover:text-foreground/50 text-[12px] ml-1 transition-colors"
-            >
-              ×
-            </button>
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          {selectedProject && (
+            <div className="flex items-center gap-2 h-11 px-3 rounded-lg bg-muted border border-border">
+              <span className="text-label text-muted-foreground">{t.graph.selectedLabel}</span>
+              <span className="text-label text-foreground font-mono truncate max-w-[300px]">
+                {selectedProject}
+              </span>
+              <button
+                onClick={() => navigate("stats", null)}
+                title="Clear selection"
+                className="ml-1 grid size-7 place-items-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              >
+                ×
+              </button>
+            </div>
+          )}
+          <ThemeToggle />
+        </div>
       </header>
 
       {/* Content */}

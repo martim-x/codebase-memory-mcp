@@ -68,11 +68,11 @@ export function GraphLoader({ nodeBudget, progress }: GraphLoaderProps) {
           />
         ))}
       </svg>
-      <p className="text-white/50 text-sm mt-4">
+      <p className="text-muted-foreground text-body mt-4">
         {receiving ? "Receiving graph" : "Computing layout"} — up to{" "}
         {nodeBudget.toLocaleString("en-US")} nodes
       </p>
-      <p className="text-cyan-300/60 text-xs font-mono mt-1 h-4">
+      <p className="text-accent-foreground text-label font-mono mt-1 h-4">
         {receiving
           ? progress.totalBytes
             ? `${formatMegabytes(progress.receivedBytes)} of ${formatMegabytes(progress.totalBytes)} MB`

@@ -357,7 +357,7 @@ export function GraphTab({ project }: GraphTabProps) {
   if (!project) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-white/30 text-sm">
+        <p className="text-muted-foreground text-body">
           Select a project from the Projects tab
         </p>
       </div>
@@ -376,7 +376,7 @@ export function GraphTab({ project }: GraphTabProps) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center p-8">
-          <p className="text-red-400 text-sm mb-2">{error}</p>
+          <p className="text-destructive text-body mb-2">{error}</p>
           <Button variant="outline" size="sm" onClick={() => fetchOverview(project)}>
             Retry
           </Button>
@@ -391,7 +391,7 @@ export function GraphTab({ project }: GraphTabProps) {
   if (!data || !filteredData || data.nodes.length === 0) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-white/30 text-sm">No nodes in this project</p>
+        <p className="text-muted-foreground text-body">No nodes in this project</p>
       </div>
     );
   }
@@ -400,7 +400,7 @@ export function GraphTab({ project }: GraphTabProps) {
     <div className="h-full flex">
       {/* Left sidebar — resizable */}
       <div
-        className="border-r border-border/30 flex flex-col h-full bg-[#0b1920]/90 backdrop-blur-md shrink-0"
+        className="border-r border-border/30 flex flex-col h-full bg-popover/90 backdrop-blur-md shrink-0"
         style={{ width: leftWidth }}
       >
         <FilterPanel
@@ -447,7 +447,7 @@ export function GraphTab({ project }: GraphTabProps) {
         {filteredData.nodes.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <p className="text-white/30 text-sm mb-3">All nodes filtered out</p>
+              <p className="text-muted-foreground text-body mb-3">All nodes filtered out</p>
               <Button size="sm" onClick={enableAll}>
                 Reset Filters
               </Button>
@@ -469,21 +469,21 @@ export function GraphTab({ project }: GraphTabProps) {
             </ErrorBoundary>
 
             {/* HUD */}
-            <div className="absolute top-4 left-4 text-[11px] text-white/30 pointer-events-none font-mono">
+            <div className="absolute top-4 left-4 text-label text-muted-foreground pointer-events-none font-mono">
               <p>
                 {filteredData.nodes.length.toLocaleString()} nodes /{" "}
                 {filteredData.edges.length.toLocaleString()} edges
               </p>
               {data.nodes.length > filteredData.nodes.length && (
-                <p className="text-white/25 mt-0.5">
+                <p className="text-muted-foreground mt-0.5">
                   filtered from {data.nodes.length.toLocaleString()}
                 </p>
               )}
               {limitNotice && (
-                <p className="text-amber-300/80 mt-0.5">{limitNotice}</p>
+                <p className="text-muted-foreground mt-0.5">{limitNotice}</p>
               )}
               {highlightedIds && highlightedIds.size > 0 && (
-                <p className="text-cyan-400/50 mt-0.5">
+                <p className="text-muted-foreground mt-0.5">
                   {highlightedIds.size} selected
                 </p>
               )}
@@ -503,10 +503,10 @@ export function GraphTab({ project }: GraphTabProps) {
                   Clear selection
                 </Button>
               )}
-              <div className="flex items-center gap-1.5 h-8 px-2 rounded-md border border-border/50 bg-[#0b1920]/80 backdrop-blur-sm">
+              <div className="flex items-center gap-1.5 h-8 px-2 rounded-md border border-border/50 bg-popover/80 backdrop-blur-sm">
                 <label
                   htmlFor="node-budget"
-                  className="text-[10px] uppercase tracking-wider text-white/40"
+                  className="text-label uppercase tracking-wider text-muted-foreground"
                 >
                   Nodes
                 </label>
@@ -524,7 +524,7 @@ export function GraphTab({ project }: GraphTabProps) {
                       e.currentTarget.blur();
                     }
                   }}
-                  className="w-24 bg-transparent text-right text-xs font-mono text-cyan-200/90 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  className="w-24 bg-transparent text-right text-label font-mono text-foreground outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   aria-label="Node budget: how many nodes to load"
                   title="How many nodes to load (5,000 steps, edges between loaded nodes follow automatically)"
                 />

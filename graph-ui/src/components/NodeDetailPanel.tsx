@@ -114,30 +114,32 @@ export function NodeDetailPanel({
   };
 
   return (
-    <div className="w-full bg-[#0b1920]/95 backdrop-blur-xl flex flex-col h-full min-h-0 overflow-hidden">
+    <div className="w-full bg-popover/95 backdrop-blur-xl flex flex-col h-full min-h-0 overflow-hidden">
       {/* Header */}
       <div className="px-4 pt-4 pb-3 border-b border-border/30">
         <div className="flex items-start justify-between gap-2 mb-2">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-1.5">
               <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: colorForLabel(node.label) }} />
-              <h3 className="text-[13px] font-semibold text-foreground truncate">{node.name}</h3>
+              <h3 className="text-body font-semibold text-foreground truncate">{node.name}</h3>
             </div>
-            <span
-              className="inline-block px-2 py-0.5 rounded-md text-[10px] font-medium"
-              style={{ backgroundColor: colorForLabel(node.label) + "18", color: colorForLabel(node.label) }}
-            >
-              {node.label}
+            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted text-label">
+              <span
+                className="w-2 h-2 rounded-full shrink-0"
+                style={{ backgroundColor: colorForLabel(node.label) }}
+                aria-hidden="true"
+              />
+              <span className="text-foreground">{node.label}</span>
             </span>
           </div>
-          <button onClick={onClose} className="text-foreground/20 hover:text-foreground/50 transition-colors text-[16px] leading-none p-1">×</button>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors text-subhead leading-none p-1">×</button>
         </div>
 
         {node.file_path && (
-          <p className="text-[11px] text-foreground/30 font-mono mt-2 break-all leading-relaxed">
+          <p className="text-label text-muted-foreground font-mono mt-2 break-all leading-relaxed">
             {node.file_path}
             {node.start_line ? (
-              <span className="text-foreground/45">
+              <span className="text-muted-foreground">
                 {" "}:{node.start_line}
                 {node.end_line && node.end_line !== node.start_line ? `-${node.end_line}` : ""}
               </span>
@@ -151,7 +153,7 @@ export function NodeDetailPanel({
             <button
               onClick={code ? () => setCode(null) : loadCode}
               disabled={codeLoading}
-              className="px-2.5 py-1 rounded-md bg-primary/15 text-primary text-[11px] font-medium hover:bg-primary/25 transition-colors disabled:opacity-50"
+              className="px-2.5 py-1 rounded-md bg-primary/15 text-primary text-label font-medium hover:bg-primary/25 transition-colors disabled:opacity-50"
             >
               {codeLoading ? "Loading…" : code ? "Hide code" : "Show code"}
             </button>
@@ -161,16 +163,16 @@ export function NodeDetailPanel({
               href={ghUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-2.5 py-1 rounded-md bg-white/[0.05] text-foreground/60 text-[11px] font-medium hover:bg-white/[0.09] hover:text-foreground/90 transition-colors"
+              className="px-2.5 py-1 rounded-md bg-muted text-foreground text-label font-medium hover:bg-muted hover:text-foreground transition-colors"
             >
               Open on GitHub ↗
             </a>
           )}
         </div>
 
-        {codeError && <p className="text-[11px] text-red-400/80 mt-2">{codeError}</p>}
+        {codeError && <p className="text-label text-destructive mt-2">{codeError}</p>}
         {code && (
-          <pre className="mt-2 max-h-[300px] overflow-auto rounded-md bg-black/40 border border-white/[0.06] p-2.5 text-[10.5px] leading-relaxed font-mono text-foreground/75 whitespace-pre">
+          <pre className="mt-2 max-h-[300px] overflow-auto rounded-md bg-black/40 border border-border p-2.5 text-[10.5px] leading-relaxed font-mono text-foreground whitespace-pre">
             {code}
           </pre>
         )}
@@ -183,8 +185,8 @@ export function NodeDetailPanel({
             { label: "Total", value: connections.length, color: "text-foreground" },
           ].map((s) => (
             <div key={s.label}>
-              <p className="text-[9px] text-foreground/25 uppercase tracking-widest">{s.label}</p>
-              <p className={`text-[18px] font-semibold tabular-nums ${s.color}`}>{s.value}</p>
+              <p className="text-label text-muted-foreground uppercase tracking-widest">{s.label}</p>
+              <p className={`text-subhead font-semibold tabular-nums ${s.color}`}>{s.value}</p>
             </div>
           ))}
         </div>
@@ -200,7 +202,7 @@ export function NodeDetailPanel({
             <ConnectionSection title="Referenced by" count={inbound.length} icon="←" groups={groupByType(inbound)} onNavigate={onNavigate} />
           )}
           {connections.length === 0 && (
-            <p className="text-[12px] text-foreground/20 text-center py-8">No connections</p>
+            <p className="text-label text-muted-foreground text-center py-8">No connections</p>
           )}
         </div>
       </ScrollArea>
@@ -215,12 +217,12 @@ function ConnectionSection({ title, count, icon, groups, onNavigate }: {
 }) {
   return (
     <div>
-      <p className="text-[11px] font-medium text-foreground/40 mb-2">
-        {title} <span className="text-foreground/15">({count})</span>
+      <p className="text-label font-medium text-muted-foreground mb-2">
+        {title} <span className="text-muted-foreground">({count})</span>
       </p>
       {groups.map(([type, conns]) => (
         <div key={type} className="mb-2">
-          <p className="text-[9px] text-foreground/20 uppercase tracking-wider mb-1 font-medium">
+          <p className="text-label text-muted-foreground uppercase tracking-wider mb-1 font-medium">
             {type.replace(/_/g, " ").toLowerCase()}
           </p>
           <div className="space-y-px">
@@ -228,16 +230,16 @@ function ConnectionSection({ title, count, icon, groups, onNavigate }: {
               <button
                 key={`${c.node.id}-${i}`}
                 onClick={() => onNavigate(c.node)}
-                className="flex items-center gap-1.5 w-full text-left px-2 py-[4px] rounded-md hover:bg-white/[0.04] text-[11px] transition-colors group"
+                className="flex items-center gap-1.5 w-full text-left px-2 py-[4px] rounded-md hover:bg-muted text-label transition-colors group"
               >
-                <span className="text-foreground/15 text-[10px] group-hover:text-foreground/30">{icon}</span>
+                <span className="text-muted-foreground text-label group-hover:text-muted-foreground">{icon}</span>
                 <span className="w-[5px] h-[5px] rounded-full shrink-0" style={{ backgroundColor: colorForLabel(c.node.label) }} />
-                <span className="text-foreground/55 group-hover:text-foreground/80 truncate">{c.node.name}</span>
-                <span className="text-foreground/10 ml-auto text-[10px] shrink-0">{c.node.label}</span>
+                <span className="text-foreground group-hover:text-foreground truncate">{c.node.name}</span>
+                <span className="text-muted-foreground ml-auto text-label shrink-0">{c.node.label}</span>
               </button>
             ))}
             {conns.length > 25 && (
-              <p className="text-[10px] text-foreground/15 px-2 py-1">+{conns.length - 25} more</p>
+              <p className="text-label text-muted-foreground px-2 py-1">+{conns.length - 25} more</p>
             )}
           </div>
         </div>

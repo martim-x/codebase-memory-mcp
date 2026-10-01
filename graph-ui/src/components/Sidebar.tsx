@@ -73,16 +73,16 @@ function TreeItem({ dir, depth, onSelect, selectedPath }: {
     <div>
       <button
         onClick={() => { setExpanded(!expanded); onSelect(dir.fullPath, dir.nodeIds, undefined); }}
-        className={`flex items-center gap-1.5 w-full text-left px-3 py-[5px] text-[12px] transition-colors ${
-          isSelected ? "bg-primary/10 text-primary" : "text-foreground/60 hover:text-foreground/80 hover:bg-white/[0.03]"
+        className={`flex items-center gap-1.5 w-full text-left px-3 py-1 text-label transition-colors ${
+          isSelected ? "bg-primary/10 text-primary" : "text-foreground hover:text-foreground hover:bg-muted"
         }`}
         style={{ paddingLeft: `${depth * 16 + 12}px` }}
       >
-        <span className="text-foreground/20 w-3 text-center text-[10px] shrink-0">
+        <span className="text-muted-foreground w-3 text-center text-label shrink-0">
           {(dir.children.size > 0 || dir.directNodes.length > 0) ? (expanded ? "▾" : "▸") : ""}
         </span>
         <span className="truncate font-medium">{dir.name}</span>
-        <span className="text-foreground/15 ml-auto text-[10px] tabular-nums shrink-0">{dir.nodeIds.size}</span>
+        <span className="text-muted-foreground ml-auto text-label tabular-nums shrink-0">{dir.nodeIds.size}</span>
       </button>
       {expanded && (
         <>
@@ -91,12 +91,12 @@ function TreeItem({ dir, depth, onSelect, selectedPath }: {
             <button
               key={gn.id}
               onClick={() => onSelect(dir.fullPath + "/" + gn.name, new Set([gn.id]), gn)}
-              className="flex items-center gap-1.5 w-full text-left px-3 py-[3px] text-[11px] text-foreground/40 hover:text-foreground/60 hover:bg-white/[0.02] transition-colors"
+              className="flex items-center gap-1.5 w-full text-left px-3 py-1 text-label text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               style={{ paddingLeft: `${(depth+1) * 16 + 12}px` }}
             >
               <span className="w-[5px] h-[5px] rounded-full shrink-0" style={{ backgroundColor: gn.color }} />
               <span className="truncate font-mono">{gn.name}</span>
-              <span className="text-foreground/10 ml-auto text-[10px] shrink-0">{gn.label}</span>
+              <span className="text-muted-foreground ml-auto text-label shrink-0">{gn.label}</span>
             </button>
           ))}
         </>
@@ -121,7 +121,7 @@ export function Sidebar({ nodes, onSelectPath, selectedPath }: SidebarProps) {
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <div className="px-4 pt-3 pb-2 shrink-0">
-        <span className="text-[11px] font-medium text-foreground/50 uppercase tracking-widest">
+        <span className="text-label font-medium text-foreground uppercase tracking-widest">
           {t.graph.folders}
         </span>
       </div>
@@ -132,7 +132,7 @@ export function Sidebar({ nodes, onSelectPath, selectedPath }: SidebarProps) {
             placeholder={t.graph.search}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-1.5 text-[12px] text-foreground placeholder-foreground/25 outline-none focus:border-primary/40 focus:bg-white/[0.06] transition-all"
+            className="w-full bg-muted border border-border rounded-lg px-3 py-1.5 text-label text-foreground placeholder-foreground/25 outline-none focus:border-primary/40 focus:bg-muted transition-all"
           />
         </div>
       </div>
@@ -141,7 +141,7 @@ export function Sidebar({ nodes, onSelectPath, selectedPath }: SidebarProps) {
         <div className="py-1">
           {filtered ? (
             filtered.length === 0 ? (
-              <p className="text-foreground/20 text-[12px] px-4 py-6 text-center">
+              <p className="text-muted-foreground text-label px-4 py-6 text-center">
                 {t.common.noMatches}
               </p>
             ) : (
@@ -149,11 +149,11 @@ export function Sidebar({ nodes, onSelectPath, selectedPath }: SidebarProps) {
                 <button
                   key={n.id}
                   onClick={() => onSelectPath(n.file_path ?? "", new Set([n.id]), n)}
-                  className="flex items-center gap-2 w-full text-left px-4 py-1.5 text-[11px] hover:bg-white/[0.03] transition-colors"
+                  className="flex items-center gap-2 w-full text-left px-4 py-1.5 text-label hover:bg-muted transition-colors"
                 >
                   <span className="w-[5px] h-[5px] rounded-full shrink-0" style={{ backgroundColor: n.color }} />
-                  <span className="text-foreground/60 truncate">{n.name}</span>
-                  <span className="text-foreground/15 ml-auto text-[10px] font-mono truncate max-w-[100px]">{n.file_path}</span>
+                  <span className="text-foreground truncate">{n.name}</span>
+                  <span className="text-muted-foreground ml-auto text-label font-mono truncate max-w-[100px]">{n.file_path}</span>
                 </button>
               ))
             )
@@ -167,7 +167,7 @@ export function Sidebar({ nodes, onSelectPath, selectedPath }: SidebarProps) {
         <div className="px-3 py-2 border-t border-border/30">
           <button
             onClick={() => onSelectPath("", new Set())}
-            className="w-full px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.07] text-[11px] text-foreground/40 font-medium transition-all"
+            className="w-full px-3 py-1.5 rounded-lg bg-muted hover:bg-muted text-label text-muted-foreground font-medium transition-all"
           >
             {t.graph.clearSelection}
           </button>

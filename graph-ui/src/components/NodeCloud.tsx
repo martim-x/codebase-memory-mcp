@@ -3,6 +3,7 @@ import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import type { GraphNode } from "../lib/types";
 import { nodeGlowBoost } from "../lib/density";
+import { DARK_LOOK, type SceneLook } from "../lib/theme";
 
 interface NodeCloudProps {
   nodes: GraphNode[];
@@ -10,6 +11,7 @@ interface NodeCloudProps {
   onHover: (node: GraphNode | null) => void;
   onClick: (node: GraphNode) => void;
   opacity?: number;
+  look?: SceneLook;
   /* Multiplier on the per-node glow boost. 1 = full boost (sparse graphs),
    * 0 = flat colors (dense graphs). Adaptive default × user setting. */
   boost?: number;
@@ -32,23 +34,39 @@ function nodeColor(
   highlightedIds: Set<number> | null,
   opacity: number,
   boost: number,
+  look: SceneLook,
   tempColor: THREE.Color,
 ): [number, number, number] {
   const hasHighlight = highlightedIds && highlightedIds.size > 0;
   tempColor.set(node.color);
   if (hasHighlight && !highlightedIds.has(node.id)) {
     tempColor.multiplyScalar(0.15);
-  } else {
+  }
+
+  /* Theme look. On white, a node has to carry more colour and less value to
+   * separate from the background; the glow boost that feeds bloom is scaled
+   * to zero there, because bloom on a light field just washes the frame out. */
+  if (look.saturation !== 1 || look.value !== 1) {
+    hsl.h = 0;
+    hsl.s = 0;
+    hsl.l = 0;
+    tempColor.getHSL(hsl);
+    tempColor.setHSL(hsl.h, hsl.s * look.saturation, hsl.l * look.value);
+  }
+  if (look.glowBoost > 0) {
     /* Boost above 1.0 so bloom picks up the excess as glow corona. Blue hubs
      * glow most, red leaves modestly, white/yellow least (see nodeGlowBoost).
      * The boost amount also fades toward 1.0 (flat color) as density rises so
      * dense graphs stay legible instead of blooming into a white blob. */
     const fullBoost = nodeGlowBoost(tempColor.r, tempColor.g, tempColor.b);
-    const applied = 1 + (fullBoost - 1) * boost;
+    const applied = 1 + (fullBoost - 1) * boost * look.glowBoost;
     tempColor.multiplyScalar(applied);
   }
   return [tempColor.r * opacity, tempColor.g * opacity, tempColor.b * opacity];
 }
+
+/* Scratch HSL target so the per-node transform allocates nothing. */
+const hsl = { h: 0, s: 0, l: 0 };
 
 /* Round, soft-edged sprite for point mode (module-level lazy singleton). */
 let pointSprite: THREE.CanvasTexture | null = null;
@@ -81,6 +99,7 @@ function NodePoints({
   onClick,
   opacity,
   boost,
+  look,
 }: Required<NodeCloudProps>) {
   const { raycaster } = useThree();
 
@@ -102,13 +121,13 @@ function NodePoints({
       positions[i * 3] = n.x;
       positions[i * 3 + 1] = n.y;
       positions[i * 3 + 2] = n.z;
-      const [r, g, b] = nodeColor(n, highlightedIds, opacity, boost, tempColor);
+      const [r, g, b] = nodeColor(n, highlightedIds, opacity, boost, look, tempColor);
       colors[i * 3] = r;
       colors[i * 3 + 1] = g;
       colors[i * 3 + 2] = b;
     }
     return { positions, colors };
-  }, [nodes, highlightedIds, opacity, boost]);
+  }, [nodes, highlightedIds, opacity, boost, look]);
 
   return (
     <points
@@ -154,11 +173,14 @@ function NodeSpheres({
   onClick,
   opacity,
   boost,
+  look,
 }: Required<NodeCloudProps>) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
+  const rimRef = useRef<THREE.InstancedMesh>(null);
   const tempObj = useMemo(() => new THREE.Object3D(), []);
   const tempColor = useMemo(() => new THREE.Color(), []);
   const detail = sphereDetail(nodes.length);
+  const hasRim = look.rimScale > 0;
 
   /* Build instance color attributes — dim non-highlighted nodes */
   const colors = useMemo(() => {
@@ -169,6 +191,7 @@ function NodeSpheres({
         highlightedIds,
         opacity,
         boost,
+        look,
         tempColor,
       );
       arr[i * 3] = r;
@@ -183,6 +206,7 @@ function NodeSpheres({
    * them per frame. */
   useEffect(() => {
     const mesh = meshRef.current;
+    const rim = rimRef.current;
     if (!mesh) return;
 
     const hasHighlight = highlightedIds && highlightedIds.size > 0;
@@ -194,12 +218,44 @@ function NodeSpheres({
       tempObj.scale.set(s, s, s);
       tempObj.updateMatrix();
       mesh.setMatrixAt(i, tempObj.matrix);
+      if (rim) {
+        /* Same sphere, grown — only its silhouette stays visible behind the
+         * node, which is what reads as a shadow on a light background. */
+        const r = s * look.rimScale;
+        tempObj.scale.set(r, r, r);
+        tempObj.updateMatrix();
+        rim.setMatrixAt(i, tempObj.matrix);
+      }
     }
     mesh.instanceMatrix.needsUpdate = true;
     mesh.computeBoundingSphere();
-  }, [nodes, highlightedIds, tempObj]);
+    if (rim) {
+      rim.instanceMatrix.needsUpdate = true;
+      rim.computeBoundingSphere();
+    }
+  }, [nodes, highlightedIds, tempObj, look.rimScale]);
 
   return (
+    <>
+    {hasRim && (
+      <instancedMesh
+        key={`rim-${nodes.length}`}
+        ref={rimRef}
+        args={[undefined, undefined, nodes.length]}
+        frustumCulled={false}
+        renderOrder={-1}
+      >
+        <sphereGeometry args={detail} />
+        <meshBasicMaterial
+          color={look.rimColor}
+          side={THREE.BackSide}
+          transparent
+          opacity={look.rimOpacity}
+          depthWrite={false}
+          toneMapped={false}
+        />
+      </instancedMesh>
+    )}
     <instancedMesh
       /* Remount when the instance count changes so buffers are re-sized */
       key={nodes.length}
@@ -227,6 +283,7 @@ function NodeSpheres({
         args={[colors, 3]}
       />
     </instancedMesh>
+    </>
   );
 }
 
@@ -237,6 +294,7 @@ export function NodeCloud({
   onClick,
   opacity = 1.0,
   boost = 1.0,
+  look = DARK_LOOK,
 }: NodeCloudProps) {
   if (nodes.length > POINT_MODE_THRESHOLD) {
     return (
@@ -247,6 +305,7 @@ export function NodeCloud({
         onClick={onClick}
         opacity={opacity}
         boost={boost}
+        look={look}
       />
     );
   }
@@ -258,6 +317,7 @@ export function NodeCloud({
       onClick={onClick}
       opacity={opacity}
       boost={boost}
+      look={look}
     />
   );
 }

@@ -15,6 +15,7 @@ import {
   nodeBoostScale,
   type DisplaySettings,
 } from "../lib/density";
+import { DARK_LOOK, LIGHT_LOOK, useTheme } from "../lib/theme";
 
 const BASE_BLOOM_INTENSITY = 1.45;
 
@@ -141,6 +142,12 @@ export function GraphScene({
   const [hovered, setHovered] = useState<GraphNode | null>(null);
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
 
+  /* The 3D view cannot read CSS variables, so the active theme picks an
+   * explicit rendering recipe. Dark keeps the original additive/glow look;
+   * light inverts it — see SceneLook. */
+  const { isDark } = useTheme();
+  const look = isDark ? DARK_LOOK : LIGHT_LOOK;
+
   /* Adaptive density defaults × user multipliers. The automatic scale keeps
    * contrast roughly constant as the graph grows; the sliders nudge it.
    * NodeCloud applies `nodeBoost` directly (no internal density scaling),
@@ -148,12 +155,15 @@ export function GraphScene({
    * user edge-brightness multiplier to avoid double-applying. */
   const nodeBoost = nodeBoostScale(data.nodes.length) * display.nodeGlow;
   const bloomIntensity =
-    BASE_BLOOM_INTENSITY * bloomIntensityScale(data.nodes.length) * display.bloom;
+    BASE_BLOOM_INTENSITY *
+    bloomIntensityScale(data.nodes.length) *
+    display.bloom *
+    look.bloomScale;
 
   return (
     <Canvas
       camera={{ position: [0, 0, 800], fov: 50, near: 0.1, far: 100000 }}
-      style={{ background: "#06090f" }}
+      style={{ background: look.background }}
       dpr={GRAPH_CANVAS_DPR}
       gl={{
         antialias: false,
@@ -162,8 +172,10 @@ export function GraphScene({
       }}
       onPointerMissed={onBackgroundClick}
     >
-      <color attach="background" args={["#06090f"]} />
-      <ambientLight intensity={0.5} />
+      {/* key forces a fresh THREE.Color: react-three-fiber does not always
+          reconcile a changed `args` on an attached object. */}
+      <color key={look.background} attach="background" args={[look.background]} />
+      <ambientLight intensity={isDark ? 0.5 : 0.75} />
       <pointLight position={[500, 500, 500]} intensity={0.6} />
       <pointLight
         position={[-300, -200, -300]}
@@ -176,6 +188,7 @@ export function GraphScene({
         edges={data.edges}
         highlightedIds={highlightedIds}
         brightness={display.edgeBrightness}
+        look={look}
       />
       <NodeCloud
         nodes={data.nodes}
@@ -183,6 +196,7 @@ export function GraphScene({
         onHover={setHovered}
         onClick={onNodeClick}
         boost={nodeBoost}
+        look={look}
       />
       {showLabels && <NodeLabels nodes={data.nodes} highlightedIds={highlightedIds} />}
 
@@ -197,6 +211,7 @@ export function GraphScene({
             highlightedIds={null}
             opacity={0.28}
             brightness={display.edgeBrightness}
+            look={look}
           />
           <NodeCloud
             nodes={missed.nodes}
@@ -205,6 +220,7 @@ export function GraphScene({
             onClick={onNodeClick}
             opacity={0.6}
             boost={nodeBoost * 0.75}
+            look={look}
           />
           {showLabels && <NodeLabels nodes={missed.nodes} highlightedIds={null} />}
         </group>
@@ -258,8 +274,8 @@ export function GraphScene({
 
       <EffectComposer multisampling={GRAPH_COMPOSER_MULTISAMPLING}>
         <Bloom
-          luminanceThreshold={0.3}
-          luminanceSmoothing={0.7}
+          luminanceThreshold={look.bloomThreshold}
+          luminanceSmoothing={look.bloomSmoothing}
           intensity={bloomIntensity}
           mipmapBlur
           radius={0.6}

@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import * as THREE from "three";
 import type { GraphNode, GraphEdge } from "../lib/types";
 import { edgeIntensityScale } from "../lib/density";
+import { DARK_LOOK, type SceneLook } from "../lib/theme";
 
 interface EdgeLinesProps {
   nodes: GraphNode[];
@@ -11,6 +12,7 @@ interface EdgeLinesProps {
   /* User edge-brightness multiplier (see DisplaySettings). Layered on top of
    * the automatic density scale. */
   brightness?: number;
+  look?: SceneLook;
   /* When set, edge.target is looked up in this array instead of `nodes`.
    * Used for cross-galaxy edges where source lives in the primary graph
    * and target lives in a linked project's offset-adjusted nodes. */
@@ -49,6 +51,8 @@ const EDGE_TYPE_COLORS: Record<string, string> = {
   TESTS_FILE: "#06b6d4",
 };
 
+/* Neutral ink for light backgrounds, where saturated edge hues wash out. */
+const EDGE_INK = new THREE.Color("#33455c");
 const DEFAULT_EDGE_COLOR = "#1C8585";
 
 export function EdgeLines({
@@ -58,6 +62,7 @@ export function EdgeLines({
   opacity = 1.0,
   brightness = 1.0,
   targetNodes,
+  look = DARK_LOOK,
 }: EdgeLinesProps) {
   const geometry = useMemo(() => {
     /* Shrink per-edge glow as the edge count grows so the additively-blended
@@ -97,7 +102,7 @@ export function EdgeLines({
 
       /* Intensity based on cluster membership and highlight.
        * With additive blending + dark background, these glow nicely. */
-      let intensity = sameCluster ? 0.25 : 0.06;
+      let intensity = (sameCluster ? 0.25 : 0.06) * look.edgeInk;
       if (hasHighlight) {
         /* A selection stays at full strength (never density-scaled) so it
          * pops against the dimmed rest; only the un-selected bulk is scaled. */
@@ -118,6 +123,9 @@ export function EdgeLines({
       const edgeColor = new THREE.Color(
         EDGE_TYPE_COLORS[edge.type] ?? DEFAULT_EDGE_COLOR,
       );
+      if (look.edgeNeutral > 0) {
+        edgeColor.lerp(EDGE_INK, look.edgeNeutral);
+      }
       colors[off] = edgeColor.r * intensity;
       colors[off + 1] = edgeColor.g * intensity;
       colors[off + 2] = edgeColor.b * intensity;
@@ -137,7 +145,7 @@ export function EdgeLines({
       new THREE.BufferAttribute(colors.slice(0, validCount * 6), 3),
     );
     return geo;
-  }, [nodes, edges, highlightedIds, targetNodes, brightness]);
+  }, [nodes, edges, highlightedIds, targetNodes, brightness, look.edgeInk, look.edgeNeutral]);
 
   return (
     <lineSegments geometry={geometry}>
@@ -145,7 +153,7 @@ export function EdgeLines({
         vertexColors
         transparent
         opacity={opacity}
-        blending={THREE.AdditiveBlending}
+        blending={look.edgeAdditive ? THREE.AdditiveBlending : THREE.NormalBlending}
         depthWrite={false}
         toneMapped={false}
       />

@@ -1,0 +1,25 @@
+# Local index scope for codebase-memory itself.
+#
+# The repo is 1.4 GB, almost all of it vendored tree-sitter grammars, Rust
+# target output and the built node_modules of the graph UI. None of it is
+# useful to query, and indexing it would bury the source under generated code.
+
+node_modules/
+dist/
+target/
+Formula/
+vendored/
+test-infrastructure/
+graph-ui/coverage/
+graph-ui/tsconfig.tsbuildinfo
+*.wasm
+*.rlib
+*.a
+*.so
+*.dylib
+*.o
+*.rlib
+docs/**/*.png
+docs/**/*.jpg
+docs/**/*.gif
+docs/**/*.svg
