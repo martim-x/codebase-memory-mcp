@@ -236,7 +236,7 @@ The install script placed beside the binary is **reported, not deleted** — uni
 - **Native runtime set, zero infrastructure services**: SQLite-backed, persists to `~/.cache/codebase-memory-mcp/`
 - **Auto-sync**: Background watcher detects file changes and re-indexes automatically
 - **Route nodes**: REST endpoints are first-class graph entities
-- **CLI mode**: `codebase-memory-mcp cli search_graph '{"project": "my-project", "name_pattern": ".*Handler.*"}'`
+- **CLI mode**: `codebase-memory-mcp cli search_graph --project my-project --name-pattern '.*Handler.*'`
 - **Available on**: npm, PyPI, Homebrew, Scoop, Winget, Chocolatey, AUR, `go install`
 
 ## Team-Shared Graph Artifact
