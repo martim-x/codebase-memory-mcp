@@ -11,6 +11,7 @@
 #include "ui/embedded_assets.h"
 #include "ui/layout3d.h"
 #include "store/store.h"
+#include <yyjson/yyjson.h>
 #ifdef _WIN32
 #include "foundation/win_utf8.h"
 #endif
@@ -554,6 +555,84 @@ TEST(layout_to_json) {
     PASS();
 }
 
+/* A node name that is not valid UTF-8 reaches the UI, and must survive the
+ * serialize → re-parse → re-serialize round trip that handle_layout() runs to
+ * graft missed_graph / linked_projects onto the primary layout.
+ *
+ * The re-parse used to use read flags 0, which rejects the raw bytes that
+ * cbm_layout_to_json() deliberately emits (it writes with
+ * YYJSON_WRITE_ALLOW_INVALID_UNICODE), so the endpoint answered HTTP 500
+ * {"error":"JSON parse failed"} and the graph tab rendered an error card with a
+ * Retry button. It only surfaced on big projects because the poisoned node
+ * happened to sit past the default node budget — a 1-node project reproduces it
+ * just as well. The name bytes are the real ones: a requirements.txt entry whose
+ * name was decoded as UTF-16, leaving a 0xFF 0xFE byte-order mark. */
+TEST(layout_json_roundtrip_survives_invalid_utf8_node_name) {
+    cbm_store_t *store = cbm_store_open_memory();
+    ASSERT_NOT_NULL(store);
+    cbm_store_upsert_project(store, "test", "/tmp/test");
+
+    /* "Namespace/<FF FE 61>" — invalid UTF-8, NUL-terminated. */
+    static const char kBadName[] = {'N', 'a', 'm', 'e', 's', 'p', 'a', 'c', 'e', '/',
+                                    (char)0xFF, (char)0xFE, 'a', '\0'};
+    cbm_node_t bad = {.project = "test",
+                      .label = "Package",
+                      .name = kBadName,
+                      .qualified_name = "test::bad",
+                      .file_path = "requirements.txt",
+                      .start_line = 1};
+    cbm_store_upsert_node(store, &bad);
+
+    cbm_node_t good = {.project = "test",
+                       .label = "Function",
+                       .name = "hello",
+                       .qualified_name = "test::hello",
+                       .file_path = "a.c",
+                       .start_line = 1,
+                       .end_line = 5};
+    cbm_store_upsert_node(store, &good);
+
+    cbm_layout_result_t *r = cbm_layout_compute(store, "test", CBM_LAYOUT_OVERVIEW, NULL, 0, 100);
+    ASSERT_NOT_NULL(r);
+    ASSERT_EQ(r->node_count, 2);
+
+    char *json = cbm_layout_to_json(r);
+    ASSERT_NOT_NULL(json);
+
+    /* This is the read that used to fail and hand the caller a NULL doc. */
+    yyjson_doc *doc = yyjson_read(json, strlen(json), YYJSON_READ_ALLOW_INVALID_UNICODE);
+    ASSERT_NOT_NULL(doc);
+
+    /* Graft, exactly as handle_layout() does, and re-serialize. */
+    yyjson_mut_doc *mdoc = yyjson_doc_mut_copy(doc, NULL);
+    ASSERT_NOT_NULL(mdoc);
+    yyjson_mut_val *root = yyjson_mut_doc_get_root(mdoc);
+    yyjson_mut_val *graft = yyjson_mut_obj(mdoc);
+    yyjson_mut_obj_add_strcpy(mdoc, graft, "tag", "missed_graph");
+    yyjson_mut_obj_add_val(mdoc, root, "grafted", graft);
+
+    size_t len = 0;
+    char *final_json = yyjson_mut_write(mdoc, 0, &len);
+    ASSERT_NOT_NULL(final_json);
+
+    /* Both nodes survive, and the invalid bytes reach the browser unchanged —
+     * TextDecoder in the UI replaces them with U+FFFD, never throws. */
+    ASSERT(strstr(final_json, "\"grafted\"") != NULL);
+    ASSERT(strstr(final_json, "hello") != NULL);
+    ASSERT(strstr(final_json, "Namespace/") != NULL);
+    ASSERT(strstr(final_json, "missed_graph") != NULL);
+    /* The poisoned byte is preserved rather than dropped or escaped. */
+    ASSERT(memmem(final_json, len, kBadName, strlen(kBadName)) != NULL);
+
+    free(final_json);
+    yyjson_mut_doc_free(mdoc);
+    yyjson_doc_free(doc);
+    free(json);
+    cbm_layout_free(r);
+    cbm_store_close(store);
+    PASS();
+}
+
 TEST(layout_null_inputs) {
     /* NULL store → NULL result */
     cbm_layout_result_t *r = cbm_layout_compute(NULL, "test", CBM_LAYOUT_OVERVIEW, NULL, 0, 100);
@@ -883,6 +962,7 @@ SUITE(ui) {
     RUN_TEST(layout_honors_budget_above_default);
     RUN_TEST(layout_deterministic);
     RUN_TEST(layout_to_json);
+    RUN_TEST(layout_json_roundtrip_survives_invalid_utf8_node_name);
     RUN_TEST(layout_null_inputs);
     RUN_TEST(layout_dead_code_classification);
     RUN_TEST(layout_coincident_nodes_bounded);

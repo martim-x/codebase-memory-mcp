@@ -77,6 +77,28 @@
 /* Max JSON-RPC request body size (1 MB) — transport enforces the same cap. */
 #define MAX_BODY_SIZE CBM_HTTP_MAX_BODY
 
+/* Read flags for every re-parse of a cbm_layout_to_json() payload.
+ *
+ * cbm_layout_to_json() serializes with YYJSON_WRITE_ALLOW_INVALID_UNICODE so a
+ * node name that is not valid UTF-8 in the store (mojibake from a mis-decoded
+ * source file — e.g. a requirements.txt entry read as UTF-16) still reaches the
+ * UI instead of failing serialization outright. The writer passes those raw
+ * bytes through unescaped, which a strict reader then rejects: the round trip
+ * died with HTTP 500 {"error":"JSON parse failed"} and, in the UI, an
+ * "JSON parse failed" + Retry card instead of the graph.
+ *
+ * It looked size-related because the only projects that ever contained such a
+ * node were also the ones large enough to have it in the node budget: the bad
+ * node sat at rank 6627 in Edu, so every budget ≤ 6627 excluded it and worked.
+ * Any single poisoned node fails the same way, at any size.
+ *
+ * Re-parsing must therefore use the read-side twin of the write flag. It is a
+ * byte-level pass-through, not a relaxation: the bytes are handed to the
+ * browser exactly as stored, and the final yyjson_mut_write() emits them
+ * unchanged, so nothing downstream sees a difference. The re-parse only exists
+ * to graft missed_graph / linked_projects onto the primary document. */
+#define CBM_UI_READ_LAYOUT_FLAGS YYJSON_READ_ALLOW_INVALID_UNICODE
+
 /* ── CORS: only allow localhost origins (blocks remote website attacks) ────── */
 
 /* Per-request CORS header buffers. Updated at the start of each dispatch.
@@ -1460,7 +1482,7 @@ static bool attach_missed_graph(yyjson_mut_doc *mdoc, yyjson_mut_val *mroot, cbm
     if (!mjson) {
         return false;
     }
-    yyjson_doc *mldoc = yyjson_read(mjson, strlen(mjson), 0);
+    yyjson_doc *mldoc = yyjson_read(mjson, strlen(mjson), CBM_UI_READ_LAYOUT_FLAGS);
     free(mjson);
     if (!mldoc) {
         return false;
@@ -1575,7 +1597,7 @@ static void handle_layout(cbm_http_conn_t *c, const cbm_http_req_t *req) {
     }
 
     /* Parse primary JSON and append missed_graph + linked_projects */
-    yyjson_doc *pdoc = yyjson_read(primary_json, strlen(primary_json), 0);
+    yyjson_doc *pdoc = yyjson_read(primary_json, strlen(primary_json), CBM_UI_READ_LAYOUT_FLAGS);
     free(primary_json);
     if (!pdoc) {
         cbm_store_close(store);
@@ -1627,7 +1649,7 @@ static void handle_layout(cbm_http_conn_t *c, const cbm_http_req_t *req) {
         }
 
         /* Parse linked project layout */
-        yyjson_doc *lpdoc = yyjson_read(lp_json, strlen(lp_json), 0);
+        yyjson_doc *lpdoc = yyjson_read(lp_json, strlen(lp_json), CBM_UI_READ_LAYOUT_FLAGS);
         free(lp_json);
         if (!lpdoc) {
             cbm_store_close(lp_store);
